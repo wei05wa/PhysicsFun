@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MainTab = 'games' | 'tournaments';
@@ -189,9 +190,11 @@ function DifficultyDots({ level, color }: { level: number; color: string }) {
 
 function GameCard({ game }: { game: typeof GAMES[0] }) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
 
   return (
     <div
+      onClick={() => router.push(`/game/${game.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
