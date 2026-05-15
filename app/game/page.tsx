@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -188,83 +189,136 @@ function DifficultyDots({ level, color }: { level: number; color: string }) {
   );
 }
 
-function GameCard({ game }: { game: typeof GAMES[0] }) {
+// ─── Lock Icon SVG ────────────────────────────────────────────────────────────
+function LockIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  );
+}
+
+// ─── GameCard ─────────────────────────────────────────────────────────────────
+function GameCard({ game, locked }: { game: typeof GAMES[0]; locked?: boolean }) {
   const [hovered, setHovered] = useState(false);
   const router = useRouter();
 
   return (
     <div
-      onClick={() => router.push(`/game/${game.id}`)}
+      onClick={() => !locked && router.push(`/game/${game.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
-        background: hovered ? 'rgba(12,17,32,0.98)' : 'rgba(8,13,26,0.8)',
-        border: `1px solid ${hovered ? game.accent + '44' : 'rgba(255,255,255,0.07)'}`,
+        background: locked
+          ? 'rgba(5,8,16,0.6)'
+          : hovered ? 'rgba(12,17,32,0.98)' : 'rgba(8,13,26,0.8)',
+        border: `1px solid ${locked ? 'rgba(255,255,255,0.05)' : hovered ? game.accent + '44' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 16,
         padding: '1.5rem',
-        cursor: 'pointer',
+        cursor: locked ? 'default' : 'pointer',
         transition: 'all 0.3s cubic-bezier(.16,1,.3,1)',
-        transform: hovered ? 'translateY(-4px)' : 'none',
-        boxShadow: hovered ? `0 16px 48px ${game.accent}12, 0 0 0 1px ${game.accent}18` : '0 4px 20px rgba(0,0,0,0.25)',
+        transform: !locked && hovered ? 'translateY(-4px)' : 'none',
+        boxShadow: !locked && hovered
+          ? `0 16px 48px ${game.accent}12, 0 0 0 1px ${game.accent}18`
+          : '0 4px 20px rgba(0,0,0,0.25)',
         display: 'flex', flexDirection: 'column', gap: '1rem',
         overflow: 'hidden',
       }}
     >
-      {/* Top glow */}
-      <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 1, background: hovered ? `linear-gradient(90deg,transparent,${game.accent}70,transparent)` : 'transparent', transition: 'background 0.4s', borderRadius: 99 }} />
+      {/* Top glow — only for unlocked */}
+      {!locked && (
+        <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 1, background: hovered ? `linear-gradient(90deg,transparent,${game.accent}70,transparent)` : 'transparent', transition: 'background 0.4s', borderRadius: 99 }} />
+      )}
 
       {/* Badge */}
-      {game.badge && (
+      {game.badge && !locked && (
         <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: game.badgeColor + '22', border: `1px solid ${game.badgeColor}44`, borderRadius: 5, padding: '0.15rem 0.5rem', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.12em', color: game.badgeColor }}>
           {game.badge}
         </div>
       )}
 
-      {/* Icon + title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-        <div style={{ width: 52, height: 52, borderRadius: 14, background: hovered ? `${game.accent}18` : 'rgba(255,255,255,0.04)', border: `1px solid ${hovered ? game.accent + '35' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all 0.3s', flexShrink: 0 }}>
-          {game.emoji}
+      {/* Content — blurred when locked */}
+      <div style={{ opacity: locked ? 0.35 : 1, filter: locked ? 'blur(1.5px)' : 'none', transition: 'opacity 0.3s, filter 0.3s', display: 'flex', flexDirection: 'column', gap: '1rem', pointerEvents: 'none' }}>
+        {/* Icon + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: hovered && !locked ? `${game.accent}18` : 'rgba(255,255,255,0.04)', border: `1px solid ${hovered && !locked ? game.accent + '35' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all 0.3s', flexShrink: 0 }}>
+            {game.emoji}
+          </div>
+          <div>
+            <div style={{ fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '1.05rem', color: '#e8edf5', lineHeight: 1.2 }}>{game.titleTh}</div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.1em', color: hovered && !locked ? game.accent : '#3a4460', transition: 'color 0.3s' }}>{game.title}</div>
+          </div>
         </div>
-        <div>
-          <div style={{ fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '1.05rem', color: '#e8edf5', lineHeight: 1.2 }}>{game.titleTh}</div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.1em', color: hovered ? game.accent : '#3a4460', transition: 'color 0.3s' }}>{game.title}</div>
+
+        {/* Desc */}
+        <p style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.83rem', color: '#5a6480', lineHeight: 1.65, fontWeight: 300 }}>{game.desc}</p>
+
+        {/* Stats row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', color: '#2a3450', marginBottom: '0.2rem' }}>DIFFICULTY</div>
+            <DifficultyDots level={game.difficulty} color={game.accent} />
+          </div>
+          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.06)' }} />
+          <div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', color: '#2a3450', marginBottom: '0.2rem' }}>XP REWARD</div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem', color: '#fbbf24' }}>{game.xp}</div>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', color: '#3a4460' }}>{game.players}</span>
+          </div>
         </div>
+
+        {/* Tags */}
+        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+          {game.tags.map(t => (
+            <span key={t} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: hovered && !locked ? game.accent + 'bb' : '#2a3450', border: `1px solid ${hovered && !locked ? game.accent + '28' : 'rgba(255,255,255,0.05)'}`, padding: '0.18rem 0.5rem', borderRadius: 4, transition: 'all 0.3s' }}>
+              {t}
+            </span>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <button style={{ width: '100%', padding: '0.7rem', background: hovered && !locked ? game.accent : 'rgba(255,255,255,0.04)', border: `1px solid ${hovered && !locked ? game.accent : 'rgba(255,255,255,0.08)'}`, borderRadius: 9, color: hovered && !locked ? '#050810' : '#5a6480', fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.3s', marginTop: 'auto' }}>
+          เล่นเลย →
+        </button>
       </div>
 
-      {/* Desc */}
-      <p style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.83rem', color: '#5a6480', lineHeight: 1.65, fontWeight: 300 }}>{game.desc}</p>
-
-      {/* Stats row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', color: '#2a3450', marginBottom: '0.2rem' }}>DIFFICULTY</div>
-          <DifficultyDots level={game.difficulty} color={game.accent} />
+      {/* ── Lock Overlay ── */}
+      {locked && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: '0.75rem',
+          background: 'rgba(5,8,16,0.55)',
+          borderRadius: 16,
+          backdropFilter: 'blur(2px)',
+          zIndex: 10,
+        }}>
+          {/* Lock icon circle */}
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'rgba(255,255,255,0.4)',
+            boxShadow: '0 0 24px rgba(0,0,0,0.4)',
+          }}>
+            <LockIcon />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: "'Anuphan',sans-serif", fontWeight: 600, fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>
+              ยังไม่ปลดล็อก
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.06em' }}>
+              เล่น Speed Quiz เพื่อปลดล็อก
+            </div>
+          </div>
         </div>
-        <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.06)' }} />
-        <div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', color: '#2a3450', marginBottom: '0.2rem' }}>XP REWARD</div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem', color: '#fbbf24' }}>{game.xp}</div>
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', color: '#3a4460' }}>{game.players}</span>
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-        {game.tags.map(t => (
-          <span key={t} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: hovered ? game.accent + 'bb' : '#2a3450', border: `1px solid ${hovered ? game.accent + '28' : 'rgba(255,255,255,0.05)'}`, padding: '0.18rem 0.5rem', borderRadius: 4, transition: 'all 0.3s' }}>
-            {t}
-          </span>
-        ))}
-      </div>
-
-      {/* CTA */}
-      <button style={{ width: '100%', padding: '0.7rem', background: hovered ? game.accent : 'rgba(255,255,255,0.04)', border: `1px solid ${hovered ? game.accent : 'rgba(255,255,255,0.08)'}`, borderRadius: 9, color: hovered ? '#050810' : '#5a6480', fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.3s', marginTop: 'auto' }}>
-        เล่นเลย →
-      </button>
+      )}
     </div>
   );
 }
@@ -304,8 +358,6 @@ function TournamentCard({ t }: { t: typeof TOURNAMENTS[0] }) {
             <div style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.75rem', color: '#3a4460' }}>{t.subtitle}</div>
           </div>
         </div>
-
-        {/* Status pill */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: `${sc}15`, border: `1px solid ${sc}30`, borderRadius: 20, padding: '0.25rem 0.65rem', flexShrink: 0 }}>
           {t.status === 'live' && <div style={{ width: 5, height: 5, borderRadius: '50%', background: sc, animation: 'pulse 1.2s infinite' }} />}
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.1em', color: sc }}>{t.statusLabel}</span>
@@ -369,7 +421,6 @@ export default function GamePage() {
         @keyframes fadeUp   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse    { 0%,100%{opacity:0.5} 50%{opacity:1} }
         @keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes shimmer  { from{background-position:-200% 0} to{background-position:200% 0} }
 
         ::-webkit-scrollbar { width:4px; }
         ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:99px; }
@@ -460,7 +511,7 @@ export default function GamePage() {
               {/* Quick stats */}
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 {[
-                  { label: 'ผู้เล่นออนไลน์', value: '9.1K', icon: '🟢', color: '#34d399' },
+                  { label: 'ผู้เล่นออนไลน์', value: 'Connect', icon: '🟢', color: '#34d399' },
                   { label: 'เกมที่เล่นได้', value: '6', icon: '🎮', color: '#a78bfa' },
                   { label: 'XP ของฉัน', value: '2,430', icon: '⭐', color: '#fbbf24' },
                   { label: 'อันดับ', value: '#842', icon: '🏅', color: '#00e5ff' },
@@ -475,13 +526,23 @@ export default function GamePage() {
                 ))}
               </div>
 
-              {/* Game cards grid */}
+              {/* Game cards grid — index 0 = unlocked, rest = locked */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
                 {GAMES.map((g, i) => (
                   <div key={g.id} style={{ animation: `fadeUp 0.5s cubic-bezier(.16,1,.3,1) ${i * 0.07}s both` }}>
-                    <GameCard game={g} />
+                    <GameCard game={g} locked={i > 0} />
                   </div>
                 ))}
+              </div>
+
+              {/* Unlock hint */}
+              <div style={{ marginTop: '1.75rem', padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.82rem', color: '#3a4460', fontWeight: 300 }}>
+                  เล่น <span style={{ color: '#00e5ff' }}>Speed Quiz</span> ให้ครบ 3 ด่าน เพื่อปลดล็อกเกมถัดไป
+                </span>
               </div>
             </div>
           )}
@@ -490,18 +551,14 @@ export default function GamePage() {
           {tab === 'tournaments' && (
             <div style={{ animation: 'fadeUp 0.4s ease both' }}>
               <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-
                 {/* Tournament list */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Banner */}
                   <div style={{ position: 'relative', background: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(251,191,36,0.18)', borderRadius: 16, padding: '1.5rem 2rem', marginBottom: '1.75rem', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: '-20px', right: '-10px', fontSize: '5rem', opacity: 0.12, animation: 'float 4s ease-in-out infinite' }}>🏆</div>
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.15em', color: '#fbbf24', marginBottom: '0.4rem' }}>SEASON 3 · ม.ค. – มี.ค. 2026</div>
                     <h2 style={{ fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '1.3rem', color: '#e8edf5', marginBottom: '0.3rem' }}>Physics League</h2>
                     <p style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.83rem', color: '#5a6480', fontWeight: 300 }}>แข่งขันรายสัปดาห์ สะสมคะแนนขึ้นอันดับ รางวัลรวม 50,000 XP</p>
                   </div>
-
-                  {/* Cards */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {TOURNAMENTS.map((t, i) => (
                       <div key={t.id} style={{ animation: `fadeUp 0.5s cubic-bezier(.16,1,.3,1) ${i * 0.08}s both` }}>
@@ -515,32 +572,19 @@ export default function GamePage() {
                 <div style={{ width: 260, flexShrink: 0, position: 'sticky', top: '5rem', animation: 'fadeUp 0.6s 0.1s ease both' }}>
                   <div style={{ background: 'rgba(8,13,26,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem', overflow: 'hidden', position: 'relative' }}>
                     <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: 1, background: 'linear-gradient(90deg,transparent,#fbbf2460,transparent)', borderRadius: 99 }} />
-
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.15em', color: '#3a4460', marginBottom: '1rem' }}>🏅 LEADERBOARD</div>
-
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                       {LEADERBOARD.map((p, i) => (
-                        <div key={p.rank} style={{
-                          display: 'flex', alignItems: 'center', gap: '0.75rem',
-                          padding: '0.6rem 0.75rem', borderRadius: 10,
-                          background: p.isMe ? 'rgba(0,229,255,0.07)' : i < 3 ? 'rgba(255,255,255,0.03)' : 'transparent',
-                          border: p.isMe ? '1px solid rgba(0,229,255,0.2)' : '1px solid transparent',
-                          animation: `fadeUp 0.4s ${i * 0.06}s ease both`,
-                        }}>
-                          <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: '1rem', color: p.rank <= 3 ? '#fbbf24' : '#2a3450', width: 20, textAlign: 'center', letterSpacing: '0.05em' }}>
-                            {p.badge || p.rank}
-                          </div>
+                        <div key={p.rank} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: 10, background: p.isMe ? 'rgba(0,229,255,0.07)' : i < 3 ? 'rgba(255,255,255,0.03)' : 'transparent', border: p.isMe ? '1px solid rgba(0,229,255,0.2)' : '1px solid transparent', animation: `fadeUp 0.4s ${i * 0.06}s ease both` }}>
+                          <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: '1rem', color: p.rank <= 3 ? '#fbbf24' : '#2a3450', width: 20, textAlign: 'center', letterSpacing: '0.05em' }}>{p.badge || p.rank}</div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.82rem', fontWeight: p.isMe ? 700 : 500, color: p.isMe ? '#00e5ff' : '#c8cde0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.58rem', color: '#3a4460' }}>🔥 {p.streak} days</div>
                           </div>
-                          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.65rem', color: '#fbbf24', textAlign: 'right', flexShrink: 0 }}>
-                            {p.xp.toLocaleString()}
-                          </div>
+                          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.65rem', color: '#fbbf24', textAlign: 'right', flexShrink: 0 }}>{p.xp.toLocaleString()}</div>
                         </div>
                       ))}
                     </div>
-
                     <button style={{ width: '100%', marginTop: '1rem', padding: '0.6rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, color: '#3a4460', fontFamily: "'Anuphan',sans-serif", fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#8a94b0'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#3a4460'; }}>
@@ -548,7 +592,6 @@ export default function GamePage() {
                     </button>
                   </div>
 
-                  {/* My tournament stats */}
                   <div style={{ background: 'rgba(8,13,26,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1.25rem', marginTop: '1rem' }}>
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.15em', color: '#3a4460', marginBottom: '0.875rem' }}>MY STATS</div>
                     {[

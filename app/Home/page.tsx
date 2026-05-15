@@ -16,7 +16,7 @@ const FEATURES = [
     accent: '#00e5ff',
     href: '/lesson',
     tags: ['กลศาสตร์', 'คลื่น', 'ไฟฟ้า', 'แสง', 'ความร้อน'],
-    stat: { value: '200+', label: 'บทเรียน' },
+    //stat: { value: '200+', label: 'บทเรียน' },
     preview: [
       { label: 'กฎนิวตัน ข้อ 1', pct: 100 },
       { label: 'กฎนิวตัน ข้อ 2', pct: 60 },
@@ -167,7 +167,7 @@ function FeatureCard({ f }: { f: (typeof FEATURES)[0] }) {
               letterSpacing: '0.04em',
             }}
           >
-            {f.stat.value}
+          
           </div>
           <div
             style={{
@@ -177,7 +177,7 @@ function FeatureCard({ f }: { f: (typeof FEATURES)[0] }) {
               marginTop: '0.1rem',
             }}
           >
-            {f.stat.label}
+            
           </div>
         </div>
       </div>
@@ -315,6 +315,7 @@ function FeatureCard({ f }: { f: (typeof FEATURES)[0] }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function HomePage() {
+   const [showVideo, setShowVideo] = useState(false);
   return (
     <>
       <style>{`

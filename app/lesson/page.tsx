@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type NodeStatus = 'completed' | 'available' | 'locked';
@@ -15,7 +16,8 @@ interface LessonNode {
   chapter: string;
   lessons: number;
   completedLessons: number;
-  col: number; // 0=left, 1=center, 2=right (for zigzag)
+  col: number;
+  href?: string; // ← เพิ่ม optional route
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -28,7 +30,7 @@ const CHAPTERS = [
     nodes: [
       { id: 'n1', title: 'การเคลื่อนที่เบื้องต้น', titleEn: 'Basic Motion', emoji: '🚀', xp: 120, status: 'completed' as NodeStatus, lessons: 5, completedLessons: 5, col: 1 },
       { id: 'n2', title: 'ความเร็วและความเร่ง', titleEn: 'Velocity & Acceleration', emoji: '⚡', xp: 150, status: 'completed' as NodeStatus, lessons: 6, completedLessons: 6, col: 0 },
-      { id: 'n3', title: 'กฎนิวตัน', titleEn: "Newton's Laws", emoji: '🍎', xp: 180, status: 'available' as NodeStatus, lessons: 8, completedLessons: 3, col: 2 },
+      { id: 'n3', title: 'กฎนิวตัน', titleEn: "Newton's Laws", emoji: '🍎', xp: 180, status: 'available' as NodeStatus, lessons: 8, completedLessons: 3, col: 2, href: '/lesson/newton' }, // ← link
       { id: 'n4', title: 'แรงและการเคลื่อนที่', titleEn: 'Force & Motion', emoji: '💪', xp: 200, status: 'locked' as NodeStatus, lessons: 7, completedLessons: 0, col: 1 },
       { id: 'n5', title: 'โมเมนตัม', titleEn: 'Momentum', emoji: '🎱', xp: 220, status: 'locked' as NodeStatus, lessons: 6, completedLessons: 0, col: 0 },
       { id: 'n6', title: 'พลังงานและงาน', titleEn: 'Energy & Work', emoji: '🔋', xp: 250, status: 'locked' as NodeStatus, lessons: 8, completedLessons: 0, col: 2 },
@@ -99,20 +101,14 @@ function PlacementModal({ node, onClose, onPass }: {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      {/* Backdrop */}
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(2,4,12,0.85)', backdropFilter: 'blur(8px)' }} />
-
-      {/* Modal */}
       <div style={{
-        position: 'relative', zIndex: 1,
-        background: '#0a0f1e',
-        border: '1px solid rgba(0,229,255,0.2)',
-        borderRadius: 20, padding: '2rem',
+        position: 'relative', zIndex: 1, background: '#0a0f1e',
+        border: '1px solid rgba(0,229,255,0.2)', borderRadius: 20, padding: '2rem',
         width: '100%', maxWidth: 500,
         boxShadow: '0 0 60px rgba(0,229,255,0.08), 0 32px 64px rgba(0,0,0,0.5)',
         animation: 'modalIn 0.35s cubic-bezier(.16,1,.3,1)',
       }}>
-        {/* Top glow line */}
         <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: 1, background: 'linear-gradient(90deg,transparent,#00e5ff80,transparent)', borderRadius: 99 }} />
 
         {step === 'intro' && (
@@ -138,26 +134,20 @@ function PlacementModal({ node, onClose, onPass }: {
 
         {step === 'quiz' && (
           <div>
-            {/* Progress */}
             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.5rem' }}>
               {QUIZ_QUESTIONS.map((_, i) => (
                 <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < current ? '#00e5ff' : i === current ? 'rgba(0,229,255,0.3)' : 'rgba(255,255,255,0.07)', transition: 'background 0.3s' }} />
               ))}
             </div>
-
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', color: '#3a4460', letterSpacing: '0.12em', marginBottom: '0.75rem' }}>
               ข้อ {current + 1}/{QUIZ_QUESTIONS.length}
             </div>
-
             <p style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '1.05rem', fontWeight: 600, color: '#e8edf5', lineHeight: 1.5, marginBottom: '1.5rem', animation: shake ? 'shake 0.4s ease' : 'none' }}>
               {q.q}
             </p>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {q.options.map((opt, i) => {
-                let bg = 'rgba(255,255,255,0.04)';
-                let border = 'rgba(255,255,255,0.08)';
-                let color = '#c8cde0';
+                let bg = 'rgba(255,255,255,0.04)', border = 'rgba(255,255,255,0.08)', color = '#c8cde0';
                 if (selected !== null) {
                   if (i === q.answer) { bg = 'rgba(52,211,153,0.12)'; border = '#34d399'; color = '#34d399'; }
                   else if (i === selected && selected !== q.answer) { bg = 'rgba(239,68,68,0.1)'; border = '#ef4444'; color = '#ef4444'; }
@@ -169,9 +159,7 @@ function PlacementModal({ node, onClose, onPass }: {
                     color, fontFamily: "'Anuphan',sans-serif", fontSize: '0.92rem', textAlign: 'left',
                     cursor: selected !== null ? 'default' : 'pointer', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '0.6rem',
                   }}>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.65rem', color: 'inherit', opacity: 0.6 }}>
-                      {String.fromCharCode(65 + i)}.
-                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.65rem', color: 'inherit', opacity: 0.6 }}>{String.fromCharCode(65 + i)}.</span>
                     {opt}
                   </button>
                 );
@@ -215,11 +203,12 @@ function PlacementModal({ node, onClose, onPass }: {
 }
 
 // ─── Node Detail Popup ────────────────────────────────────────────────────────
-function NodePopup({ node, chapterColor, onClose, onUnlock }: {
+function NodePopup({ node, chapterColor, onClose, onUnlock, onNavigate }: {
   node: LessonNode;
   chapterColor: string;
   onClose: () => void;
   onUnlock: () => void;
+  onNavigate: () => void; // ← ใหม่: navigate ไปหน้าบทเรียน
 }) {
   const pct = node.lessons > 0 ? Math.round((node.completedLessons / node.lessons) * 100) : 0;
 
@@ -271,15 +260,18 @@ function NodePopup({ node, chapterColor, onClose, onUnlock }: {
           🔓 ทำแบบทดสอบเพื่อปลดล็อก
         </button>
       ) : node.status === 'completed' ? (
-        <button style={{
+        // completed + มี href → navigate ได้
+        <button onClick={node.href ? onNavigate : undefined} style={{
           width: '100%', padding: '0.65rem', background: `${chapterColor}15`,
           border: `1px solid ${chapterColor}40`, borderRadius: 8,
-          color: chapterColor, fontFamily: "'Anuphan',sans-serif", fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer',
+          color: chapterColor, fontFamily: "'Anuphan',sans-serif", fontWeight: 600, fontSize: '0.82rem',
+          cursor: node.href ? 'pointer' : 'default',
         }}>
           ✓ ทบทวนบทเรียน
         </button>
       ) : (
-        <button style={{
+        // available → ปุ่มเรียนต่อ navigate ทันที
+        <button onClick={onNavigate} style={{
           width: '100%', padding: '0.65rem', background: chapterColor,
           border: 'none', borderRadius: 8,
           color: '#050810', fontFamily: "'Anuphan',sans-serif", fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
@@ -288,17 +280,17 @@ function NodePopup({ node, chapterColor, onClose, onUnlock }: {
         </button>
       )}
 
-      {/* Arrow */}
       <div style={{ position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, background: '#0c1120', border: `1px solid ${chapterColor}33`, borderTop: 'none', borderLeft: 'none', rotate: '45deg' }} />
     </div>
   );
 }
 
 // ─── Skill Node ───────────────────────────────────────────────────────────────
-function SkillNode({ node, chapterColor, onUnlockRequest }: {
+function SkillNode({ node, chapterColor, onUnlockRequest, onNavigate }: {
   node: LessonNode;
   chapterColor: string;
   onUnlockRequest: (node: LessonNode) => void;
+  onNavigate: (href: string) => void; // ← ใหม่
 }) {
   const [showPopup, setShowPopup] = useState(false);
   const pct = node.lessons > 0 ? Math.round((node.completedLessons / node.lessons) * 100) : 0;
@@ -309,28 +301,22 @@ function SkillNode({ node, chapterColor, onUnlockRequest }: {
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* Node button */}
       <button
         onClick={() => setShowPopup(v => !v)}
         style={{
           position: 'relative', width: 72, height: 72, borderRadius: '50%',
-          background: bgColor,
-          border: `2.5px solid ${ringColor}`,
+          background: bgColor, border: `2.5px solid ${ringColor}`,
           boxShadow: node.status !== 'locked' ? `0 0 20px ${chapterColor}30, inset 0 0 20px ${chapterColor}08` : 'none',
-          cursor: node.status === 'locked' ? 'pointer' : 'pointer',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
           fontSize: '1.6rem',
         }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        {/* Completed ring pulse */}
         {node.status === 'completed' && (
           <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `1px solid ${chapterColor}30`, animation: 'ringPulse 2.5s infinite' }} />
         )}
-
-        {/* SVG circular progress for in-progress */}
         {node.status === 'available' && pct > 0 && pct < 100 && (
           <svg style={{ position: 'absolute', inset: -4, width: 80, height: 80, transform: 'rotate(-90deg)' }} viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="36" fill="none" stroke={`${chapterColor}20`} strokeWidth="3" />
@@ -340,28 +326,19 @@ function SkillNode({ node, chapterColor, onUnlockRequest }: {
               strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease' }} />
           </svg>
         )}
-
         <span style={{ opacity: emojiOpacity, fontSize: '1.5rem', lineHeight: 1 }}>{node.emoji}</span>
-
-        {/* Lock icon overlay */}
         {node.status === 'locked' && (
-          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: '50%', background: '#0a0f1e', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>
-            🔒
-          </div>
+          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: '50%', background: '#0a0f1e', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>🔒</div>
         )}
         {node.status === 'completed' && (
-          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: '50%', background: chapterColor, border: `1.5px solid ${chapterColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#050810', fontWeight: 700 }}>
-            ✓
-          </div>
+          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: '50%', background: chapterColor, border: `1.5px solid ${chapterColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#050810', fontWeight: 700 }}>✓</div>
         )}
       </button>
 
-      {/* Label */}
       <div style={{ marginTop: '0.5rem', fontFamily: "'Anuphan',sans-serif", fontSize: '0.75rem', fontWeight: 600, color: node.status === 'locked' ? '#2a3450' : '#8a94b0', textAlign: 'center', maxWidth: 90, lineHeight: 1.3 }}>
         {node.title}
       </div>
 
-      {/* Popup */}
       {showPopup && (
         <>
           <div onClick={() => setShowPopup(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
@@ -373,6 +350,10 @@ function SkillNode({ node, chapterColor, onUnlockRequest }: {
               setShowPopup(false);
               onUnlockRequest(node);
             }}
+            onNavigate={() => {
+              setShowPopup(false);
+              if (node.href) onNavigate(node.href);
+            }}
           />
         </>
       )}
@@ -380,16 +361,16 @@ function SkillNode({ node, chapterColor, onUnlockRequest }: {
   );
 }
 
-// ─── Skill Tree Column Layout ─────────────────────────────────────────────────
-function ChapterTree({ chapter, onUnlockRequest }: {
+// ─── Chapter Tree ─────────────────────────────────────────────────────────────
+function ChapterTree({ chapter, onUnlockRequest, onNavigate }: {
   chapter: typeof CHAPTERS[0];
   onUnlockRequest: (node: LessonNode) => void;
+  onNavigate: (href: string) => void;
 }) {
   const colPositions = ['16%', '50%', '84%'];
 
   return (
     <div style={{ marginBottom: '3rem' }}>
-      {/* Chapter header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', padding: '0 1rem' }}>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${chapter.color}40)` }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -400,9 +381,7 @@ function ChapterTree({ chapter, onUnlockRequest }: {
         <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${chapter.color}40, transparent)` }} />
       </div>
 
-      {/* Nodes zigzag */}
       <div style={{ position: 'relative' }}>
-        {/* Connecting lines */}
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }} preserveAspectRatio="none">
           {chapter.nodes.slice(0, -1).map((node, i) => {
             const next = chapter.nodes[i + 1];
@@ -424,7 +403,6 @@ function ChapterTree({ chapter, onUnlockRequest }: {
           })}
         </svg>
 
-        {/* Node items */}
         {chapter.nodes.map((node, i) => (
           <div key={node.id} style={{
             position: 'relative', height: 120, display: 'flex', alignItems: 'center',
@@ -433,7 +411,12 @@ function ChapterTree({ chapter, onUnlockRequest }: {
             paddingRight: colPositions[node.col] === '84%' ? '5%' : undefined,
             animation: `fadeUp 0.5s cubic-bezier(.16,1,.3,1) ${i * 0.07}s both`,
           }}>
-            <SkillNode node={{ ...node, chapter: chapter.id }} chapterColor={chapter.color} onUnlockRequest={onUnlockRequest} />
+            <SkillNode
+              node={{ ...node, chapter: chapter.id }}
+              chapterColor={chapter.color}
+              onUnlockRequest={onUnlockRequest}
+              onNavigate={onNavigate}
+            />
           </div>
         ))}
       </div>
@@ -443,26 +426,31 @@ function ChapterTree({ chapter, onUnlockRequest }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LessonPage() {
+  const router = useRouter(); // ← เพิ่ม
   const [chapters, setChapters] = useState(CHAPTERS);
   const [testNode, setTestNode] = useState<(LessonNode & { chapterColor: string }) | null>(null);
-  const [unlockedIds, setUnlockedIds] = useState<string[]>([]);
 
   const handleUnlockRequest = (node: LessonNode, chapterColor: string) => {
     setTestNode({ ...node, chapterColor });
   };
 
+  // เมื่อ placement test ผ่าน → unlock แล้ว navigate ทันที (ถ้ามี href)
   const handlePass = () => {
     if (!testNode) return;
-    setUnlockedIds(prev => [...prev, testNode.id]);
-    // Update chapters state
     setChapters(prev => prev.map(ch => ({
       ...ch,
       nodes: ch.nodes.map(n => n.id === testNode!.id ? { ...n, status: 'available' as NodeStatus } : n),
     })));
+    const dest = testNode.href;
     setTestNode(null);
+    if (dest) router.push(dest); // ← navigate หลัง unlock
   };
 
-  // Compute XP totals
+  // navigate จาก NodePopup ปุ่ม "เรียนต่อ"
+  const handleNavigate = (href: string) => {
+    router.push(href);
+  };
+
   const totalXp = CHAPTERS.flatMap(c => c.nodes).filter(n => n.status === 'completed').reduce((a, n) => a + n.xp, 0);
   const completedCount = CHAPTERS.flatMap(c => c.nodes).filter(n => n.status === 'completed').length;
   const totalNodes = CHAPTERS.flatMap(c => c.nodes).length;
@@ -473,14 +461,12 @@ export default function LessonPage() {
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Anuphan:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:#050810; color:#e8edf5; font-family:'Anuphan',sans-serif; overflow-x:hidden; }
-
         @keyframes fadeUp   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes modalIn  { from{opacity:0;transform:translateY(20px) scale(0.97)} to{opacity:1;transform:none} }
         @keyframes popIn    { from{opacity:0;transform:translateX(-50%) translateY(6px) scale(0.96)} to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} }
         @keyframes ringPulse{ 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.1;transform:scale(1.15)} }
         @keyframes shake    { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
         @keyframes pulse    { 0%,100%{opacity:0.5} 50%{opacity:1} }
-
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
@@ -493,17 +479,12 @@ export default function LessonPage() {
           <div style={{ position: 'absolute', bottom: '20%', right: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(167,139,250,0.05) 0%,transparent 70%)', filter: 'blur(40px)' }} />
         </div>
 
-        {/* ── Nav ─────────────────────────────────────────── */}
-        <nav style={{
-          position: 'sticky', top: 0, zIndex: 50,
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(5,8,16,0.85)', backdropFilter: 'blur(16px)',
-          padding: '0.875rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem',
-        }}>
+        {/* Nav */}
+        <nav style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(5,8,16,0.85)', backdropFilter: 'blur(16px)', padding: '0.875rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <a href="/" style={{ fontFamily: "'Bebas Neue',cursive", fontSize: '1.4rem', letterSpacing: '0.1em', color: '#e8edf5', textDecoration: 'none', marginRight: 'auto' }}>
             PHYS<span style={{ color: '#00e5ff' }}>FUN</span>
           </a>
-          {[{ label: 'Lesson', href: '/learn' }, { label: 'Practice', href: '/practice' }, { label: 'Challenge', href: '/game' }].map(l => (
+          {[{ label: 'Lesson', href: '/lesson' }, { label: 'Practice', href: '/practice' }, { label: 'Challenge', href: '/game' }].map(l => (
             <a key={l.href} href={l.href}
               style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.88rem', color: l.label === 'Lesson' ? '#e8edf5' : '#5a6480', textDecoration: 'none', padding: '0.4rem 0.75rem', borderRadius: 6, background: l.label === 'Lesson' ? 'rgba(255,255,255,0.06)' : 'transparent', transition: 'color 0.2s, background 0.2s' }}
               onMouseEnter={e => { if (l.label !== 'Lesson') { e.currentTarget.style.color = '#e8edf5'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; } }}
@@ -520,12 +501,11 @@ export default function LessonPage() {
           </a>
         </nav>
 
-        {/* ── Layout: sidebar + tree ──────────────────────── */}
+        {/* Layout */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem', gap: '2rem', alignItems: 'flex-start' }}>
 
-          {/* ── Skill Tree (center) ── */}
+          {/* Skill Tree */}
           <main style={{ flex: 1, minWidth: 0 }}>
-            {/* Header */}
             <div style={{ marginBottom: '2.5rem', animation: 'fadeUp 0.6s ease both' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', animation: 'pulse 2s infinite' }} />
@@ -539,17 +519,15 @@ export default function LessonPage() {
               </p>
             </div>
 
-            {/* Tree */}
             <div style={{ maxWidth: 520, margin: '0 auto' }}>
               {chapters.map(ch => (
                 <ChapterTree
                   key={ch.id}
                   chapter={ch}
                   onUnlockRequest={(node) => handleUnlockRequest(node, ch.color)}
+                  onNavigate={handleNavigate}
                 />
               ))}
-
-              {/* End badge */}
               <div style={{ textAlign: 'center', padding: '2rem 0', animation: 'fadeUp 0.5s 0.5s ease both' }}>
                 <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1.25rem 2rem', background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16 }}>
                   <span style={{ fontSize: '2rem' }}>🏁</span>
@@ -559,10 +537,8 @@ export default function LessonPage() {
             </div>
           </main>
 
-          {/* ── Sidebar ── */}
+          {/* Sidebar */}
           <aside style={{ width: 240, flexShrink: 0, position: 'sticky', top: '5rem', display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'fadeUp 0.6s 0.1s ease both' }}>
-
-            {/* XP Card */}
             <div style={{ background: 'rgba(8,13,26,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.15em', color: '#3a4460', marginBottom: '0.75rem' }}>MY PROGRESS</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.2rem' }}>
@@ -570,7 +546,6 @@ export default function LessonPage() {
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.65rem', color: '#5a6480' }}>XP</span>
               </div>
               <div style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.78rem', color: '#3a4460', marginBottom: '1rem' }}>คะแนนสะสม</div>
-
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: '1.4rem', color: '#00e5ff', letterSpacing: '0.05em' }}>{completedCount}</div>
@@ -582,8 +557,6 @@ export default function LessonPage() {
                   <div style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.68rem', color: '#3a4460' }}>เหลืออยู่</div>
                 </div>
               </div>
-
-              {/* Overall progress bar */}
               <div style={{ marginTop: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                   <span style={{ fontFamily: "'Anuphan',sans-serif", fontSize: '0.72rem', color: '#5a6480' }}>ความก้าวหน้ารวม</span>
@@ -595,7 +568,6 @@ export default function LessonPage() {
               </div>
             </div>
 
-            {/* Streak card */}
             <div style={{ background: 'rgba(8,13,26,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>🔥</span>
@@ -617,7 +589,6 @@ export default function LessonPage() {
               </div>
             </div>
 
-            {/* Legend */}
             <div style={{ background: 'rgba(8,13,26,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.15em', color: '#3a4460', marginBottom: '0.875rem' }}>LEGEND</div>
               {[
@@ -636,7 +607,7 @@ export default function LessonPage() {
           </aside>
         </div>
 
-        {/* ── Placement Test Modal ── */}
+        {/* Placement Test Modal */}
         {testNode && (
           <PlacementModal
             node={testNode}

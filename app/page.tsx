@@ -30,7 +30,7 @@ const TOPICS = [
 ];
 
 const FEATURES = [
-  { num: '01', icon: '🔁', title: 'เรียนแบบ Duolingo', subtitle: 'Bite-size + Repeat', desc: 'เรียนแบบ Interactive ใช้เวลานิดเดียว ด้วย Animation และ Simulation', accent: '#a78bfa', hoverContent: { title: 'Session วันนี้', preview: [], steps: ['⚡ Quick Quiz: 3 นาที', '🔁 Review: สิ่งที่กำลังจะลืม', '🎯 New Concept: 5 นาที', '✅ Done! +120 XP'] } },
+  { num: '01', icon: '🔁', title: 'เรียนแบบ Micro-Learning', subtitle: 'Bite-size + Repeat', desc: 'เรียนแบบ Interactive ใช้เวลานิดเดียว ด้วย Animation และ Simulation', accent: '#a78bfa', hoverContent: { title: 'Session วันนี้', preview: [], steps: ['⚡ Quick Quiz: 3 นาที', '🔁 Review: สิ่งที่กำลังจะลืม', '🎯 New Concept: 5 นาที', '✅ Done! +120 XP'] } },
   { num: '02', icon: '🧩', title: 'ทำโจทย์ ฝึกแก้ปัญหา', subtitle: 'Problem-First Learning', desc: 'ทำโจทย์จริง มี hint ค่อยๆ ไขข้อสงสัย เห็นภาพทีละขั้น ไม่ท่องจำแต่เข้าใจลึก', accent: '#00e5ff', hoverContent: { title: 'ลองเลย', preview: [{ q: 'ลูกบอลมวล 2 kg ตกจากที่สูง 10 m ความเร็วตอนแตะพื้นเป็นเท่าไร?', hint: 'ใช้ v² = u² + 2as โดย a = g = 9.8 m/s²' }], steps: ['Step 1: ระบุตัวแปร', 'Step 2: เลือกสมการ', 'Step 3: แทนค่า', '✓ คำตอบ: 14 m/s'] } },
   { num: '03', icon: '🎮', title: 'เล่นเกม & แข่งขัน', subtitle: 'Game Mode + Community', desc: 'แข่งกับเพื่อน สะสม reward ปลดล็อก achievement', accent: '#34d399', hoverContent: { title: 'Leaderboard วันนี้', preview: [], steps: ['🥇 PhysicsKing  — 4,280 XP', '🥈 StarStudent  — 3,950 XP', '🥉 You  — 3,210 XP', '🏆 Badge ใหม่ปลดล็อกแล้ว!'] } },
 ];
@@ -140,7 +140,6 @@ function HeroBgCanvas() {
       style={{
         position:'absolute', inset:0, width:'100%', height:'100%',
         pointerEvents:'none', zIndex:0,
-        // Canvas on its own GPU layer — no compositing interference with hero text
         willChange:'transform', transform:'translateZ(0)',
       }}
     />
@@ -314,44 +313,37 @@ export default function Home() {
   const [pct, setPct] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [cursorActive, setCursorActive] = useState(false);
-  
-  // ใช้ Ref เก็บค่าเพื่อไม่ให้เกิด Re-render มหาศาล
+  const [showVideo, setShowVideo] = useState(false); // ✅ เพิ่มตรงนี้
+
   const mouseRef = useRef({ x: 0, y: 0 });
   const ringLerpRef = useRef({ x: 0, y: 0 });
-  
-  // State สำหรับวาด UI ของ Cursor (อัปเดตผ่าน Animation Frame เท่านั้น)
+
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [ringPos, setRingPos] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
 
-  // 1. Loader Logic
   useEffect(() => {
     let p = 0;
-    const iv = setInterval(() => { 
-      p += Math.random() * 14; 
-      if (p >= 100) { 
-        p = 100; 
-        clearInterval(iv); 
-        setTimeout(() => setLoaded(true), 600); 
-      } 
-      setPct(Math.floor(p)); 
+    const iv = setInterval(() => {
+      p += Math.random() * 14;
+      if (p >= 100) {
+        p = 100;
+        clearInterval(iv);
+        setTimeout(() => setLoaded(true), 600);
+      }
+      setPct(Math.floor(p));
     }, 70);
     return () => clearInterval(iv);
   }, []);
 
-  // 2. Scroll & Cursor Logic (รวมกันเพื่อประสิทธิภาพ)
   useEffect(() => {
-    // Scroll Handler
-    const handleScroll = () => { 
-      setScrolled(window.scrollY > 50); 
-      setScrollY(window.scrollY); 
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+      setScrollY(window.scrollY);
     };
-
-    // Mouse Move Handler (เก็บค่าเข้า Ref เฉยๆ ไม่เรียก setMx/setMy)
     const handleMouseMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
-
     const handleDown = () => setCursorActive(true);
     const handleUp = () => setCursorActive(false);
 
@@ -360,17 +352,12 @@ export default function Home() {
     window.addEventListener('mousedown', handleDown);
     window.addEventListener('mouseup', handleUp);
 
-    // Animation Loop: ทำหน้าที่อัปเดตตำแหน่ง Cursor ให้ลื่นไหล (60fps)
     let raf: number;
     const animate = () => {
-      // ตัวจุด (Cursor Dot) - วิ่งตามเมาส์ทันที
       setCursorPos({ x: mouseRef.current.x, y: mouseRef.current.y });
-
-      // ตัววงแหวน (Cursor Ring) - มีความหน่วง (Lerp)
       ringLerpRef.current.x += (mouseRef.current.x - ringLerpRef.current.x) * 0.15;
       ringLerpRef.current.y += (mouseRef.current.y - ringLerpRef.current.y) * 0.15;
       setRingPos({ x: ringLerpRef.current.x, y: ringLerpRef.current.y });
-
       raf = requestAnimationFrame(animate);
     };
     animate();
@@ -384,6 +371,13 @@ export default function Home() {
     };
   }, []);
 
+  // ปิด modal เมื่อกด ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowVideo(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const parallaxY = scrollY * 0.4;
 
   return (
@@ -393,74 +387,30 @@ export default function Home() {
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         html { font-size:16px; scroll-behavior:smooth; scroll-padding-top:80px; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
         body { background:#050810; color:#e8edf5; font-family:'Anuphan',sans-serif; cursor:none; overflow-x:hidden; }
-        /*
-         * KEY FIX: Any element with will-change:transform or translateZ(0)
-         * gets promoted to a GPU layer. On Windows, GPU layers use grayscale AA
-         * instead of ClearType — text looks blurry/fuzzy on first render.
-         * We ONLY use GPU promotion on non-text elements (canvas, cursor dots).
-         * All text containers must stay on the CPU compositor.
-         */
         * { -webkit-font-smoothing: antialiased; }
         section+section::before { content:''; display:block; height:1px; background:linear-gradient(90deg,transparent 0%,rgba(0,229,255,0.07) 40%,rgba(124,58,237,0.07) 60%,transparent 100%); margin-bottom:-1px; }
-
-        /*
-         * UNIVERSAL BLUR-FREE ANIMATION RULES:
-         * ✅ opacity alone           — always safe, no GPU promotion
-         * ✅ opacity + translateY/X  — safe IF no text inside is on a GPU layer
-         * ❌ scale()                 — sub-pixel interpolation → blur on Windows
-         * ❌ rotate()                — same issue on Windows ClearType
-         * ❌ skewX/Y()               — sub-pixel → blur
-         * ❌ translateZ(0) inside keyframes — forces GPU → disables ClearType
-         * ❌ clip-path animation     — GPU layer → disables ClearType on text
-         * ❌ will-change on text containers — pre-promotes to GPU → blur
-         *
-         * Rule: ONLY use opacity transitions for anything containing text.
-         * translateY/X is fine for non-text decorative elements only.
-         */
-
-        /* Text entrance — opacity only, zero transform, no GPU promotion */
         @keyframes fadeIn        { from{opacity:0} to{opacity:1} }
-
-        /* Non-text entrance — small translate is fine for pure layout elements */
         @keyframes slideUp       { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideLeft     { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
         @keyframes slideRight    { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
-
-        /* Carousel — opacity only, no scale (scale causes blur) */
         @keyframes carouselIn    { from{opacity:0} to{opacity:1} }
-
-        /* Loader progress bar width */
         @keyframes progressFill  { from{width:0} to{width:100%} }
-
-        /* Scan lines — position-only, no transform */
         @keyframes scanH         { from{top:-2px} to{top:100%} }
         @keyframes scanLine      { from{left:-60%} to{left:160%} }
-
-        /* Pulse dot — opacity only, no scale */
         @keyframes pulseDot      { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-        /* Breathe — opacity only on background glows (not text) */
         @keyframes breathe       { 0%,100%{opacity:0.7} 50%{opacity:1} }
-
-        /* Orbit/float — these are on canvas/decorative divs only, not text */
         @keyframes spinOrbit     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes floatY        { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-8px)} }
-
-        /* Glitch — opacity-only flicker instead of skew/translate (skew = blur) */
         @keyframes glitchFlicker { 0%,89%,91%,100%{opacity:0} 90%{opacity:0.35} }
-
-        /* ── Hero entrance: opacity only for all text elements ── */
         .hero-tag   { animation: fadeIn 0.7s ease 1.6s both; }
         .hero-title { animation: fadeIn 0.7s ease 1.8s both; }
         .hero-sub   { animation: fadeIn 0.7s ease 2.0s both; }
         .hero-act   { animation: fadeIn 0.7s ease 2.2s both; }
         nav         { animation: fadeIn 0.6s ease 2.3s both; }
-
         .btn-primary { transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .25s; }
         .btn-primary:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 10px 35px rgba(0,229,255,.4); }
         .btn-ghost { transition:all .25s; }
         .btn-ghost:hover { border-color:rgba(255,255,255,.4) !important; color:#e8edf5 !important; transform:translateY(-2px); }
-
         @media (max-width:768px) {
           nav { padding:0.875rem 1.25rem !important; }
           nav > div.nav-links { display:none !important; }
@@ -468,25 +418,11 @@ export default function Home() {
         }
       `}</style>
 
-      {/*
-        ════════════════════════════════════════════════════════
-        FIX B: CURSOR — mixBlendMode:'screen' REMOVED
-
-        mixBlendMode on ANY fixed/absolute element forces the browser to
-        flatten ALL compositor layers into a single surface before blending.
-        This means every GPU-promoted element (animated cards, canvas, etc.)
-        gets composited into one flat texture — destroying layer isolation
-        and causing the blur you saw on first load.
-
-        Replacement: box-shadow glow gives visually identical cyan bloom
-        without any compositing side effects.
-        ════════════════════════════════════════════════════════
-      */}
+      {/* Cursor dot */}
       <div style={{
-
         position: 'fixed',
-        left: ringPos.x, // แก้จาก ringPos.x (ถ้าเดิมใช้ชื่ออื่น)
-        top: ringPos.y,  // แก้จาก ringPos.y
+        left: ringPos.x,
+        top: ringPos.y,
         width: 32,
         height: 32,
         border: '1px solid #00e5ff',
@@ -494,7 +430,7 @@ export default function Home() {
         pointerEvents: 'none',
         zIndex: 9998,
         transform: `translate(-50%, -50%) scale(${cursorActive ? 0.8 : 1})`,
-        transition: 'transform 0.2s ease', // ให้เหลือแค่การขยาย/หดตัว ส่วนตำแหน่งใช้ Animation Frame คุมแล้ว
+        transition: 'transform 0.2s ease',
       }}/>
       <div style={{
         position:'fixed',
@@ -505,10 +441,9 @@ export default function Home() {
         pointerEvents:'none', zIndex:9998,
         transition:'width 0.2s, height 0.2s, border-color 0.2s',
         willChange:'transform',
-        /* No mixBlendMode here either */
       }}/>
 
-      {/* Loading screen — isolated layer so it can't blur page content */}
+      {/* Loading screen */}
       <div style={{ position:'fixed',inset:0,background:'#050810',zIndex:9000,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center', opacity:loaded?0:1, visibility:loaded?'hidden':'visible', transition:'opacity 0.8s ease, visibility 0.8s ease', overflow:'hidden', isolation:'isolate', willChange:'opacity' }}>
         <div style={{position:'absolute',left:0,right:0,height:1,background:'rgba(0,229,255,0.25)',animation:'scanH 1.5s linear infinite',pointerEvents:'none'}}/>
         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:'clamp(3rem,8vw,6rem)',letterSpacing:'0.15em',position:'relative'}}>
@@ -529,28 +464,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/*
-        ════════════════════════════════════════════════════════
-        FIX C: NAV — backdrop-filter is now ALWAYS active
-
-        The original code toggled backdrop-filter on/off via the `scrolled`
-        state. Each toggle causes the browser to CREATE or DESTROY a compositor
-        layer for the nav, which triggers a full layer-tree rebuild — this
-        briefly flattens all child layers, causing the blur flash as you scroll.
-
-        Fix: backdrop-filter is always present. Only background opacity and
-        border-color transition on scroll. No layer rebuild = no blur.
-        ════════════════════════════════════════════════════════
-      */}
+      {/* Nav */}
       <nav style={{
         position:'fixed',top:0,left:0,right:0,zIndex:100,
         padding:'1rem 2.5rem',display:'flex',alignItems:'center',justifyContent:'space-between',
         borderBottom:`1px solid ${scrolled?'rgba(0,229,255,.1)':'transparent'}`,
         background:scrolled?'rgba(5,8,16,.92)':'rgba(5,8,16,0.01)',
-        backdropFilter:'blur(20px)',         /* ALWAYS ON — never toggled */
+        backdropFilter:'blur(20px)',
         WebkitBackdropFilter:'blur(20px)',
         transition:'background 0.4s ease, border-color 0.4s ease',
-        isolation:'isolate',                 /* Nav blur can't bleed into child layers */
+        isolation:'isolate',
         willChange:'transform',
       }}>
         <a href="#hero" style={{fontFamily:"'Bebas Neue',cursive",fontSize:'1.6rem',letterSpacing:'0.1em',color:'#e8edf5',textDecoration:'none'}}>
@@ -637,28 +560,59 @@ export default function Home() {
           </div>
           <h2 style={{fontFamily:"'Bebas Neue',cursive",fontSize:'clamp(1.8rem,3.5vw,3rem)',lineHeight:1.1,letterSpacing:'0.02em',marginBottom:'1rem'}}>ดูก่อน<span style={{color:'#00e5ff'}}>ตัดสินใจ</span></h2>
           <p style={{color:'#5a6480',fontSize:'0.9rem',fontWeight:300,marginBottom:'3rem'}}>ชม demo ว่า PhysFun ทำงานยังไง ก่อนเริ่มใช้งานจริง</p>
-          <div style={{position:'relative',aspectRatio:'16/9',background:'#020508',border:'1px solid rgba(0,229,255,0.15)',borderRadius:16,overflow:'hidden',cursor:'pointer',transition:'box-shadow 0.3s, border-color 0.3s'}}
+
+          {/* ── Video Modal ── */}
+          {showVideo && (
+            <div
+              onClick={() => setShowVideo(false)}
+              style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}
+            >
+              <div onClick={e => e.stopPropagation()} style={{width:'min(900px,90vw)',aspectRatio:'16/9',position:'relative'}}>
+                <iframe
+                  src="https://www.youtube.com/embed/h-9VUH5OayE?autoplay=1&rel=0"
+                  style={{width:'100%',height:'100%',border:'none',borderRadius:12}}
+                  allowFullScreen
+                  allow="autoplay; encrypted-media"
+                />
+                <button
+                  onClick={() => setShowVideo(false)}
+                  style={{position:'absolute',top:-40,right:0,background:'none',border:'none',color:'#7a8aaa',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.75rem',cursor:'pointer',letterSpacing:'0.1em'}}
+                >[ ESC / CLOSE ]</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Thumbnail / Play button ── */}
+          <div
+            onClick={() => setShowVideo(true)}
+            style={{position:'relative',aspectRatio:'16/9',background:'#020508',border:'1px solid rgba(0,229,255,0.15)',borderRadius:16,overflow:'hidden',cursor:'pointer',transition:'box-shadow 0.3s, border-color 0.3s'}}
             onMouseEnter={e=>{e.currentTarget.style.boxShadow='0 0 60px rgba(0,229,255,0.12)';e.currentTarget.style.borderColor='rgba(0,229,255,0.3)';(e.currentTarget.querySelector('.play-btn') as HTMLElement)!.style.transform='translate(-50%,-50%) scale(1.12)';}}
             onMouseLeave={e=>{e.currentTarget.style.boxShadow='none';e.currentTarget.style.borderColor='rgba(0,229,255,0.15)';(e.currentTarget.querySelector('.play-btn') as HTMLElement)!.style.transform='translate(-50%,-50%) scale(1)';}}>
-            <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 30% 50%,rgba(0,229,255,0.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(124,58,237,0.06) 0%,transparent 60%)'}}/>
-            <div style={{position:'absolute',left:0,right:0,height:1,background:'rgba(0,229,255,0.15)',animation:'scanH 4s linear infinite',pointerEvents:'none'}}/>
-            <div style={{position:'absolute',inset:'1.5rem',display:'grid',gridTemplateColumns:'1fr 2fr',gap:'0.75rem',opacity:0.35}}>
-              <div style={{background:'rgba(0,229,255,0.05)',border:'1px solid rgba(0,229,255,0.1)',borderRadius:8,padding:'0.75rem'}}>
-                <div style={{width:'60%',height:6,background:'rgba(0,229,255,0.3)',borderRadius:3,marginBottom:'0.5rem'}}/>
-                {[0.8,0.6,0.9,0.5,0.7].map((w,i)=><div key={i} style={{width:`${w*100}%`,height:4,background:'rgba(255,255,255,0.08)',borderRadius:2,marginBottom:'0.4rem'}}/>)}
-              </div>
-              <div style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{fontSize:'3rem',animation:'floatY 3s ease-in-out infinite'}}>⚙️</div></div>
-            </div>
+
+            {/* YouTube thumbnail */}
+            <img
+              src="https://img.youtube.com/vi/h-9VUH5OayE/maxresdefault.jpg"
+              style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.6}}
+              alt="PhysFun Demo"
+            />
+            <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(5,8,16,0.7) 0%,transparent 60%)'}}/>
+
+            {/* Play button */}
             <div className="play-btn" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:76,height:76,background:'rgba(0,229,255,0.12)',border:'2px solid #00e5ff',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform 0.3s cubic-bezier(.16,1,.3,1)',boxShadow:'0 0 40px rgba(0,229,255,0.35)'}}>
               <svg width="26" height="26" fill="#00e5ff" viewBox="0 0 24 24" style={{marginLeft:4}}><polygon points="5,3 19,12 5,21"/></svg>
             </div>
-            <div style={{position:'absolute',bottom:'1.25rem',right:'1.25rem',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.6rem',color:'#f59e0b',border:'1px solid rgba(245,158,11,0.3)',padding:'0.2rem 0.6rem',borderRadius:3,display:'flex',alignItems:'center',gap:5,background:'rgba(245,158,11,0.06)'}}>
-              <div style={{width:5,height:5,borderRadius:'50%',background:'#f59e0b',animation:'pulseDot 1.5s infinite'}}/> Coming Soon
+
+            {/* Duration badge */}
+            <div style={{position:'absolute',bottom:'1.25rem',right:'1.25rem',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.6rem',color:'#00e5ff',border:'1px solid rgba(0,229,255,0.3)',padding:'0.2rem 0.6rem',borderRadius:3,background:'rgba(0,229,255,0.06)'}}>
+              3:00
             </div>
           </div>
+
+          {/* Stats */}
           <div style={{display:'flex',gap:'2rem',justifyContent:'center',marginTop:'2.5rem',paddingTop:'2rem',borderTop:'1px solid rgba(255,255,255,0.06)',flexWrap:'wrap'}}>
-            {[{n:'200+',l:'บทเรียน'},{n:'50+',l:'Simulations'},{n:'6',l:'หมวดวิชา'},{n:'94%',l:'ผ่านข้อสอบ'}].map(s=><AnimatedStat key={s.l} n={s.n} l={s.l}/>)}
+            
           </div>
+
         </div>
       </section>
 
